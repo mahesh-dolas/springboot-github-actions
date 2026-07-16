@@ -1,0 +1,36 @@
+name: Deploy to UAT
+
+on:
+  workflow_run:
+    workflows:
+      - Spring Boot Dev CI
+    types:
+      - completed
+
+
+jobs:
+
+  deploy-uat:
+
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+
+    runs-on: ubuntu-latest
+
+    environment:
+      name: uat
+
+
+    steps:
+
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+
+      - name: UAT Deployment Started
+        run: |
+          echo "================================="
+          echo "Deploying Application to UAT"
+          echo "================================="
+
+          echo "Source Commit:"
+          echo "${{ github.event.workflow_run.head_sha }}"
