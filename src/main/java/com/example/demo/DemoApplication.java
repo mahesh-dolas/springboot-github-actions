@@ -15,6 +15,6 @@ public class DemoApplication {
 
     @GetMapping("/")
     public String hello() {
-        return "Hello GitHub Actions - Dev Build v2";
+        return "Hello Dev CI/CD Pipeline";
     }
 }
