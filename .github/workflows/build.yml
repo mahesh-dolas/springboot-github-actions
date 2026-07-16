@@ -6,6 +6,9 @@ on:
       - main
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -21,28 +24,23 @@ jobs:
           java-version: '21'
           cache: maven
 
-      - name: Build Maven Project
-        run: mvn clean verify
+      - name: Build Application
+        run: mvn clean package
 
-      - name: Get Maven Version
+      - name: Get Project Version
+        id: version
         run: |
-          VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)
-          echo "VERSION=$VERSION" >> $GITHUB_ENV
-          echo "Application Version: $VERSION"
+          VERSION=$(mvn help:evaluate \
+            -Dexpression=project.version \
+            -q \
+            -DforceStdout)
 
-      - name: Verify Secrets
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Verify Docker Secrets
         run: |
-          if [ -z "${{ secrets.DOCKER_USERNAME }}" ]; then
-            echo "ERROR: DOCKER_USERNAME secret is missing"
-            exit 1
-          fi
-
-          if [ -z "${{ secrets.DOCKER_PASSWORD }}" ]; then
-            echo "ERROR: DOCKER_PASSWORD secret is missing"
-            exit 1
-          fi
-
-          echo "Docker secrets found."
+          test -n "${{ secrets.DOCKER_USERNAME }}" || (echo "DOCKER_USERNAME is missing" && exit 1)
+          test -n "${{ secrets.DOCKER_PASSWORD }}" || (echo "DOCKER_PASSWORD is missing" && exit 1)
 
       - name: Login to Docker Hub
         uses: docker/login-action@v3
@@ -53,16 +51,17 @@ jobs:
       - name: Build Docker Image
         run: |
           docker build \
-            -t ${{ secrets.DOCKER_USERNAME }}/springboot-poc:${{ env.VERSION }} \
-            -t ${{ secrets.DOCKER_USERNAME }}/springboot-poc:latest .
+            -t ${{ secrets.DOCKER_USERNAME }}/springboot-poc:${{ steps.version.outputs.version }} \
+            -t ${{ secrets.DOCKER_USERNAME }}/springboot-poc:latest \
+            .
 
       - name: Push Docker Images
         run: |
-          docker push ${{ secrets.DOCKER_USERNAME }}/springboot-poc:${{ env.VERSION }}
+          docker push ${{ secrets.DOCKER_USERNAME }}/springboot-poc:${{ steps.version.outputs.version }}
           docker push ${{ secrets.DOCKER_USERNAME }}/springboot-poc:latest
 
-      - name: Show Published Images
+      - name: Display Published Images
         run: |
           echo "Published Images:"
-          echo "${{ secrets.DOCKER_USERNAME }}/springboot-poc:${{ env.VERSION }}"
+          echo "${{ secrets.DOCKER_USERNAME }}/springboot-poc:${{ steps.version.outputs.version }}"
           echo "${{ secrets.DOCKER_USERNAME }}/springboot-poc:latest"
