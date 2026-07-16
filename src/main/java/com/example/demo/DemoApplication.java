@@ -15,6 +15,6 @@ public class DemoApplication {
 
     @GetMapping("/")
     public String hello() {
-        return "Hello Release v1.8.0";
+        return "Hello Release v1.10.0";
     }
 }
