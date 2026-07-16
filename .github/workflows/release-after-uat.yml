@@ -1,0 +1,60 @@
+name: Release After UAT
+
+
+on:
+
+  workflow_run:
+    workflows:
+      - Deploy to UAT
+    types:
+      - completed
+
+
+jobs:
+
+  release:
+
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+
+    runs-on: ubuntu-latest
+
+
+    steps:
+
+      - name: Login Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+
+      - name: Promote UAT Image
+        run: |
+
+          SHA=$(echo "${{ github.event.workflow_run.head_sha }}" | cut -c1-7)
+
+          IMAGE=${{ secrets.DOCKER_USERNAME }}/springboot-poc
+
+          VERSION=v1.7.0
+
+
+          echo "Promoting image:"
+          echo "$IMAGE:dev-$SHA"
+
+
+          docker pull $IMAGE:dev-$SHA
+
+
+          docker tag \
+          $IMAGE:dev-$SHA \
+          $IMAGE:$VERSION
+
+
+          docker push $IMAGE:$VERSION
+
+
+      - name: Release Completed
+        run: |
+
+          echo "Release Image:"
+          echo "${{ secrets.DOCKER_USERNAME }}/springboot-poc:v1.7.0"
