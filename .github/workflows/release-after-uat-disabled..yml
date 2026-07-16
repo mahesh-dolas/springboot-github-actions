@@ -35,7 +35,7 @@ jobs:
 
           IMAGE=${{ secrets.DOCKER_USERNAME }}/springboot-poc
 
-          VERSION=v1.7.0
+          VERSION=v1.9.0
 
 
           echo "Promoting image:"
