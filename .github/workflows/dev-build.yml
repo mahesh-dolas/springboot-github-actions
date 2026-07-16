@@ -1,0 +1,58 @@
+name: Spring Boot Dev CI
+
+on:
+  push:
+    branches:
+      - main
+
+  workflow_dispatch:
+
+
+jobs:
+
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+
+      - name: Checkout Source
+        uses: actions/checkout@v4
+
+
+      - name: Setup Java 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+
+
+      - name: Build Maven Project
+        run: mvn clean package
+
+
+      - name: Verify Docker Secrets
+        run: |
+          test -n "${{ secrets.DOCKER_USERNAME }}" || exit 1
+          test -n "${{ secrets.DOCKER_PASSWORD }}" || exit 1
+
+
+      - name: Login Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+
+      - name: Build Dev Docker Image
+        run: |
+          docker build \
+          -t ${{ secrets.DOCKER_USERNAME }}/springboot-poc:dev-latest \
+          -t ${{ secrets.DOCKER_USERNAME }}/springboot-poc:dev-${{ github.run_number }} .
+
+
+      - name: Push Dev Docker Image
+        run: |
+          docker push ${{ secrets.DOCKER_USERNAME }}/springboot-poc:dev-latest
+          docker push ${{ secrets.DOCKER_USERNAME }}/springboot-poc:dev-${{ github.run_number }}
