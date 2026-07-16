@@ -9,7 +9,6 @@ on:
 
 
 jobs:
-
   build:
 
     runs-on: ubuntu-latest
@@ -30,12 +29,6 @@ jobs:
 
       - name: Build Maven Project
         run: mvn clean package
-
-
-      - name: Verify Docker Secrets
-        run: |
-          test -n "${{ secrets.DOCKER_USERNAME }}" || exit 1
-          test -n "${{ secrets.DOCKER_PASSWORD }}" || exit 1
 
 
       - name: Login Docker Hub
