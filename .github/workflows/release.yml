@@ -1,0 +1,69 @@
+name: Spring Boot Release Pipeline
+
+on:
+  workflow_dispatch:
+    inputs:
+
+      image_sha:
+        description: "Dev image SHA tag to promote"
+        required: true
+        type: string
+
+      version:
+        description: "Release version"
+        required: true
+        type: string
+
+
+jobs:
+
+  release:
+
+    runs-on: ubuntu-latest
+
+
+    steps:
+
+      - name: Checkout Source
+        uses: actions/checkout@v4
+
+
+      - name: Login Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+
+      - name: Pull Dev Image
+        run: |
+
+          IMAGE=${{ secrets.DOCKER_USERNAME }}/springboot-poc
+
+          docker pull $IMAGE:dev-${{ inputs.image_sha }}
+
+
+      - name: Create Release Tag
+        run: |
+
+          IMAGE=${{ secrets.DOCKER_USERNAME }}/springboot-poc
+
+          docker tag \
+          $IMAGE:dev-${{ inputs.image_sha }} \
+          $IMAGE:v${{ inputs.version }}
+
+
+      - name: Push Release Image
+        run: |
+
+          IMAGE=${{ secrets.DOCKER_USERNAME }}/springboot-poc
+
+          docker push \
+          $IMAGE:v${{ inputs.version }}
+
+
+      - name: Display Release Image
+        run: |
+
+          echo "Released Image:"
+          echo "${{ secrets.DOCKER_USERNAME }}/springboot-poc:v${{ inputs.version }}"
