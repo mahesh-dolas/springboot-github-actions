@@ -9,6 +9,7 @@ on:
 
 
 jobs:
+
   build:
 
     runs-on: ubuntu-latest
@@ -27,11 +28,12 @@ jobs:
           cache: maven
 
 
-      - name: Build Maven Project
-        run: mvn clean package
+      - name: Compile Application
+        run: mvn clean compile
 
-      - name: Run Unit test
-        run: mvn test  
+
+      - name: Run Unit Tests
+        run: mvn test
 
 
       - name: Login Docker Hub
@@ -41,9 +43,10 @@ jobs:
           password: ${{ secrets.DOCKER_PASSWORD }}
 
 
-      - name: Generate Image Tags
+      - name: Generate Docker Tags
         id: image
         run: |
+
           IMAGE=${{ secrets.DOCKER_USERNAME }}/springboot-poc
 
           SHA=$(git rev-parse --short HEAD)
@@ -51,14 +54,13 @@ jobs:
           echo "IMAGE=$IMAGE" >> $GITHUB_OUTPUT
           echo "SHA=$SHA" >> $GITHUB_OUTPUT
 
-          echo "Docker Image:"
-          echo "$IMAGE"
-          echo "Commit SHA:"
-          echo "$SHA"
+          echo "Docker Image: $IMAGE"
+          echo "Commit SHA: $SHA"
 
 
       - name: Build Dev Docker Image
         run: |
+
           IMAGE=${{ steps.image.outputs.IMAGE }}
           SHA=${{ steps.image.outputs.SHA }}
 
@@ -68,8 +70,42 @@ jobs:
             -t $IMAGE:dev-$SHA .
 
 
+      - name: Install Trivy
+        run: |
+
+          sudo apt-get update
+
+          sudo apt-get install -y wget apt-transport-https gnupg
+
+          wget -qO - https://aquasecurity.github.io/trivy-repo/deb/public.key \
+          | sudo gpg --dearmor -o /usr/share/keyrings/trivy.gpg
+
+          echo "deb [signed-by=/usr/share/keyrings/trivy.gpg] https://aquasecurity.github.io/trivy-repo/deb $(lsb_release -sc) main" \
+          | sudo tee /etc/apt/sources.list.d/trivy.list
+
+          sudo apt-get update
+
+          sudo apt-get install -y trivy
+
+
+      - name: Scan Docker Image With Trivy
+        run: |
+
+          IMAGE=${{ steps.image.outputs.IMAGE }}
+          SHA=${{ steps.image.outputs.SHA }}
+
+          echo "Scanning image:"
+          echo "$IMAGE:dev-$SHA"
+
+          trivy image \
+            --severity HIGH,CRITICAL \
+            --exit-code 1 \
+            $IMAGE:dev-$SHA
+
+
       - name: Push Dev Docker Images
         run: |
+
           IMAGE=${{ steps.image.outputs.IMAGE }}
           SHA=${{ steps.image.outputs.SHA }}
 
@@ -80,6 +116,7 @@ jobs:
 
       - name: Display Published Images
         run: |
+
           IMAGE=${{ steps.image.outputs.IMAGE }}
           SHA=${{ steps.image.outputs.SHA }}
 
