@@ -28,12 +28,8 @@ jobs:
           cache: maven
 
 
-      - name: Compile Application
-        run: mvn clean compile
-
-
-      - name: Run Unit Tests
-        run: mvn test
+      - name: Build and Test Application
+        run: mvn clean package
 
 
       - name: Login Docker Hub
@@ -54,8 +50,11 @@ jobs:
           echo "IMAGE=$IMAGE" >> $GITHUB_OUTPUT
           echo "SHA=$SHA" >> $GITHUB_OUTPUT
 
-          echo "Docker Image: $IMAGE"
-          echo "Commit SHA: $SHA"
+          echo "Docker Image:"
+          echo "$IMAGE"
+
+          echo "Commit SHA:"
+          echo "$SHA"
 
 
       - name: Build Dev Docker Image
@@ -94,7 +93,7 @@ jobs:
           IMAGE=${{ steps.image.outputs.IMAGE }}
           SHA=${{ steps.image.outputs.SHA }}
 
-          echo "Scanning image:"
+          echo "Scanning:"
           echo "$IMAGE:dev-$SHA"
 
           trivy image \
@@ -110,7 +109,9 @@ jobs:
           SHA=${{ steps.image.outputs.SHA }}
 
           docker push $IMAGE:dev-latest
+
           docker push $IMAGE:dev-${{ github.run_number }}
+
           docker push $IMAGE:dev-$SHA
 
 
