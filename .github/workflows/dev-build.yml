@@ -38,14 +38,49 @@ jobs:
           password: ${{ secrets.DOCKER_PASSWORD }}
 
 
+      - name: Generate Image Tags
+        id: image
+        run: |
+          IMAGE=${{ secrets.DOCKER_USERNAME }}/springboot-poc
+
+          SHA=$(git rev-parse --short HEAD)
+
+          echo "IMAGE=$IMAGE" >> $GITHUB_OUTPUT
+          echo "SHA=$SHA" >> $GITHUB_OUTPUT
+
+          echo "Docker Image:"
+          echo "$IMAGE"
+          echo "Commit SHA:"
+          echo "$SHA"
+
+
       - name: Build Dev Docker Image
         run: |
+          IMAGE=${{ steps.image.outputs.IMAGE }}
+          SHA=${{ steps.image.outputs.SHA }}
+
           docker build \
-          -t ${{ secrets.DOCKER_USERNAME }}/springboot-poc:dev-latest \
-          -t ${{ secrets.DOCKER_USERNAME }}/springboot-poc:dev-${{ github.run_number }} .
+            -t $IMAGE:dev-latest \
+            -t $IMAGE:dev-${{ github.run_number }} \
+            -t $IMAGE:dev-$SHA .
 
 
-      - name: Push Dev Docker Image
+      - name: Push Dev Docker Images
         run: |
-          docker push ${{ secrets.DOCKER_USERNAME }}/springboot-poc:dev-latest
-          docker push ${{ secrets.DOCKER_USERNAME }}/springboot-poc:dev-${{ github.run_number }}
+          IMAGE=${{ steps.image.outputs.IMAGE }}
+          SHA=${{ steps.image.outputs.SHA }}
+
+          docker push $IMAGE:dev-latest
+          docker push $IMAGE:dev-${{ github.run_number }}
+          docker push $IMAGE:dev-$SHA
+
+
+      - name: Display Published Images
+        run: |
+          IMAGE=${{ steps.image.outputs.IMAGE }}
+          SHA=${{ steps.image.outputs.SHA }}
+
+          echo "Published Dev Images:"
+          echo "$IMAGE:dev-latest"
+          echo "$IMAGE:dev-${{ github.run_number }}"
+          echo "$IMAGE:dev-$SHA"
