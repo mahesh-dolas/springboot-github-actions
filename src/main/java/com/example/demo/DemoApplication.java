@@ -15,6 +15,6 @@ public class DemoApplication {
 
     @GetMapping("/")
     public String hello() {
-        return "Testing UAT to Release Promotion";
+        return "Hello Release v1.8.0";
     }
 }
