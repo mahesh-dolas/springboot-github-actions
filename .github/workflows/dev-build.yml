@@ -69,39 +69,6 @@ jobs:
             -t $IMAGE:dev-$SHA .
 
 
-    #   - name: Install Trivy
-    #     run: |
-
-    #       sudo apt-get update
-
-    #       sudo apt-get install -y wget apt-transport-https gnupg
-
-    #       wget -qO - https://aquasecurity.github.io/trivy-repo/deb/public.key \
-    #       | sudo gpg --dearmor -o /usr/share/keyrings/trivy.gpg
-
-    #       echo "deb [signed-by=/usr/share/keyrings/trivy.gpg] https://aquasecurity.github.io/trivy-repo/deb $(lsb_release -sc) main" \
-    #       | sudo tee /etc/apt/sources.list.d/trivy.list
-
-    #       sudo apt-get update
-
-    #       sudo apt-get install -y trivy
-
-
-    #   - name: Scan Docker Image With Trivy
-    #     run: |
-
-    #       IMAGE=${{ steps.image.outputs.IMAGE }}
-    #       SHA=${{ steps.image.outputs.SHA }}
-
-    #       echo "Scanning:"
-    #       echo "$IMAGE:dev-$SHA"
-
-    #       trivy image \
-    #         --severity HIGH,CRITICAL \
-    #         --exit-code 1 \
-    #         $IMAGE:dev-$SHA
-
-
       - name: Push Dev Docker Images
         run: |
 
@@ -125,3 +92,15 @@ jobs:
           echo "$IMAGE:dev-latest"
           echo "$IMAGE:dev-${{ github.run_number }}"
           echo "$IMAGE:dev-$SHA"
+
+
+      - name: Show Release Candidate
+        run: |
+
+          IMAGE=${{ steps.image.outputs.IMAGE }}
+          SHA=${{ steps.image.outputs.SHA }}
+
+          echo "================================="
+          echo "Release Candidate Image:"
+          echo "$IMAGE:dev-$SHA"
+          echo "================================="
