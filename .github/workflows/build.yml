@@ -4,13 +4,14 @@ on:
   push:
     branches:
       - main
+  workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout source
+      - name: Checkout Source
         uses: actions/checkout@v4
 
       - name: Setup Java 21
@@ -25,11 +26,23 @@ jobs:
 
       - name: Get Maven Version
         run: |
-          echo "VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)" >> $GITHUB_ENV
+          VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+          echo "Application Version: $VERSION"
 
-      - name: Check Docker Username
+      - name: Verify Secrets
         run: |
-          echo "Docker user: ${{ secrets.DOCKER_USERNAME }}"
+          if [ -z "${{ secrets.DOCKER_USERNAME }}" ]; then
+            echo "ERROR: DOCKER_USERNAME secret is missing"
+            exit 1
+          fi
+
+          if [ -z "${{ secrets.DOCKER_PASSWORD }}" ]; then
+            echo "ERROR: DOCKER_PASSWORD secret is missing"
+            exit 1
+          fi
+
+          echo "Docker secrets found."
 
       - name: Login to Docker Hub
         uses: docker/login-action@v3
@@ -40,16 +53,16 @@ jobs:
       - name: Build Docker Image
         run: |
           docker build \
-            -t ${{ secrets.DOCKER_USERNAME }}/springboot-poc:${VERSION} \
+            -t ${{ secrets.DOCKER_USERNAME }}/springboot-poc:${{ env.VERSION }} \
             -t ${{ secrets.DOCKER_USERNAME }}/springboot-poc:latest .
 
       - name: Push Docker Images
         run: |
-          docker push ${{ secrets.DOCKER_USERNAME }}/springboot-poc:${VERSION}
+          docker push ${{ secrets.DOCKER_USERNAME }}/springboot-poc:${{ env.VERSION }}
           docker push ${{ secrets.DOCKER_USERNAME }}/springboot-poc:latest
 
-      - name: Display Image Tags
+      - name: Show Published Images
         run: |
-          echo "Published:"
-          echo "${{ secrets.DOCKER_USERNAME }}/springboot-poc:${VERSION}"
+          echo "Published Images:"
+          echo "${{ secrets.DOCKER_USERNAME }}/springboot-poc:${{ env.VERSION }}"
           echo "${{ secrets.DOCKER_USERNAME }}/springboot-poc:latest"
